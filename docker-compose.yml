@@ -1,0 +1,56 @@
+version: '3'
+
+volumes:
+  snmptraps:
+  
+services:
+    nginx:
+        image: nginx:latest
+        container_name: ${APP_NAME:?err}-nginx
+        restart: always
+        ports:
+            - '80:80'
+            - '443:443'
+        links:
+            - 'php'
+        depends_on:
+            - php
+        volumes:
+            - '/data0/Server/Settings/nginx:/etc/nginx/conf.d'
+            - '/data0/Server/Logs/nginx:/var/log/nginx'
+            - '/data0/Server/Tools:/var/server-tools'
+            - '/data0/Projects:/var/www/html'
+            - '/data0/Server/Auths:/var/server-auths'
+            - '/etc/group:/etc/group:ro'
+            - '/etc/passwd:/etc/passwd:ro'
+            - '/etc/shadow:/etc/shadow:ro'
+    php:
+        restart: always
+        build:
+            context: ./docker
+            dockerfile: php.Dockerfile
+        container_name: ${APP_NAME:?err}-php
+        links:
+            - 'mariadb'
+        volumes:
+            - '/data0/Server/Settings/php/php.ini:/usr/local/etc/php/php.ini'
+            - '/data0/Projects:/var/www/html'
+            - '/data0/Server/Tools:/var/server-tools'
+            - '/etc/group:/etc/group:ro'
+            - '/etc/passwd:/etc/passwd:ro'
+            - '/etc/shadow:/etc/shadow:ro'
+
+    mariadb:
+        image: mariadb:10.3.9
+        container_name: ${APP_NAME:?err}-mariadb
+        restart: 'always'
+        #restart: 'on-failure'
+        environment:
+            MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?err}
+        ports:
+            - "3306:3306"
+        volumes:
+            - "/data0/Server/Db/mysql:/var/lib/mysql"
+            - "/data0/Server/Logs/mysql:/var/log/mysql"
+            - "/data0/Server/Settings/mysql/my.cnf:/etc/mysql/my.cnf"
+
